@@ -67,13 +67,61 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 /* clang-format on */
 
+#ifdef ENCODER_MAP_ENABLE
+/* Rotary Encoders
+ */
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    //  不具合： VIALの画面とコンパイラで参照する場所が違う
-    [0] = { ENCODER_CCW_CW(KC_A, KC_S)/* ←VIALの画面的には3番目のエンコーダ */, ENCODER_CCW_CW(KC_D, KC_F) /* ←VIALの画面的には7番目のエンコーダ */, ENCODER_CCW_CW(KC_G, KC_H), ENCODER_CCW_CW(KC_J, KC_K)/* ←コンパイラ的には3番目のエンコーダ */, ENCODER_CCW_CW(KC_L, KC_Z), ENCODER_CCW_CW(KC_X, KC_C), ENCODER_CCW_CW(KC_V, KC_B),  ENCODER_CCW_CW(KC_N, KC_M)/*←コンパイラ的には7番目のエンコーダ */ },
-    [1] = { ENCODER_CCW_CW(KC_A, KC_S), ENCODER_CCW_CW(KC_D, KC_F), ENCODER_CCW_CW(KC_G, KC_H), ENCODER_CCW_CW(KC_J, KC_K), ENCODER_CCW_CW(KC_L, KC_Z), ENCODER_CCW_CW(KC_X, KC_C), ENCODER_CCW_CW(KC_V, KC_B),  ENCODER_CCW_CW(KC_N, KC_M) },
-    [2] = { ENCODER_CCW_CW(KC_A, KC_S), ENCODER_CCW_CW(KC_D, KC_F), ENCODER_CCW_CW(KC_G, KC_H), ENCODER_CCW_CW(KC_J, KC_K), ENCODER_CCW_CW(KC_L, KC_Z), ENCODER_CCW_CW(KC_X, KC_C), ENCODER_CCW_CW(KC_V, KC_B),  ENCODER_CCW_CW(KC_N, KC_M) },
-    [3] = { ENCODER_CCW_CW(KC_A, KC_S), ENCODER_CCW_CW(KC_D, KC_F), ENCODER_CCW_CW(KC_G, KC_H), ENCODER_CCW_CW(KC_J, KC_K), ENCODER_CCW_CW(KC_L, KC_Z), ENCODER_CCW_CW(KC_X, KC_C), ENCODER_CCW_CW(KC_V, KC_B),  ENCODER_CCW_CW(KC_N, KC_M) },
+    /* Qwerty
+     *    v- (index) Clockwise / Counter Clockwise                        v- (index) Clockwise / Counter Clockwise
+     * ,---------------------------------------------------------------------------------------.
+     * | (0) Vol-    / Vol+    |   |   |   |   |   |   |   |   |   |   | (4) Vol-    / Vol+    |
+     * |-----------------------+---+---+---+---+---+---+---+---+---+---+-----------------------|
+     * | (1) KC_MNXT / KC_MPRV |   |   |   |   |   |   |   |   |   |   | (5) KC_MNXT / KC_MPRV |
+     * |-----------------------+---+---+---+---+---+---+---+---+---+---+-----------------------|
+     * | (2) KC_WBAK / KC_WFWD |   |   |   |   |   |   |   |   |   |   | (6) KC_SPC  / KC_ENT  |
+     * |-----------------------+---+---+---+---+---+---+---+---+---+---+-----------------------|
+     * | (3) KC_LEFT / KC_RGHT |   |   |   |   |       |   |   |   |   | (7) KC_DOWN / KC_UP   |
+     * `---------------------------------------------------------------------------------------'
+     */
+    [_QWERTY] = {
+        // LEFT SIDE (index 0 to 3)
+        ENCODER_CCW_CW(KC_VOLU, KC_VOLD),
+        ENCODER_CCW_CW(KC_MNXT, KC_MPRV),
+        ENCODER_CCW_CW(KC_WBAK, KC_WFWD),
+        ENCODER_CCW_CW(KC_LEFT, KC_RGHT),
+        // RIGHT SIDE (index 4 to 7)
+        ENCODER_CCW_CW(KC_VOLU, KC_VOLD),
+        ENCODER_CCW_CW(KC_MNXT, KC_MPRV),
+        ENCODER_CCW_CW(KC_SPC,  KC_ENT),
+        ENCODER_CCW_CW(KC_DOWN, KC_UP)
+    },
+
+    /* Adjust (Lower + Raise)
+     *    v- (index) Clockwise / Counter Clockwise                        v- (index) Clockwise / Counter Clockwise
+     * ,---------------------------------------------------------------------------------------.
+     * | (0) _______ / _______ |   |   |   |   |   |   |   |   |   |   | (4) _______ / _______ |
+     * |-----------------------+---+---+---+---+---+---+---+---+---+---+-----------------------|
+     * | (1) _______ / _______ |   |   |   |   |   |   |   |   |   |   | (5) _______ / _______ |
+     * |-----------------------+---+---+---+---+---+---+---+---+---+---+-----------------------|
+     * | (2) RGB_MOD / RGB_RMOD|   |   |   |   |   |   |   |   |   |   | (6) SAT- / SAT+       |
+     * |-----------------------+---+---+---+---+---+---+---+---+---+---+-----------------------|
+     * | (3) BRGTH- / BRGTH+   |   |   |   |   |       |   |   |   |   | (7) HUE- / HUE+       |
+     * `---------------------------------------------------------------------------------------'
+     */
+    [_ADJUST] = {
+        // LEFT SIDE (index 0 to 3)
+        ENCODER_CCW_CW(_______, _______),
+        ENCODER_CCW_CW(_______, _______),
+        ENCODER_CCW_CW(RGB_MOD, RGB_RMOD),
+        ENCODER_CCW_CW(RGB_VAD, RGB_VAI),
+        // RIGHT SIDE (index 4 to 7)
+        ENCODER_CCW_CW(_______, _______),
+        ENCODER_CCW_CW(_______, _______),
+        ENCODER_CCW_CW(RGB_SAD,  RGB_SAI),
+        ENCODER_CCW_CW(RGB_HUD, RGB_HUI)
+    }
 };
+#endif
 
 layer_state_t layer_state_set_user(layer_state_t state) {
     return update_tri_layer_state(state, _LOWER, _RAISE, _ADJUST);

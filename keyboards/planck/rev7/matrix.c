@@ -35,8 +35,8 @@
 #   define PLANCK_WATCHDOG_TIMEOUT 1.0
 #endif
 
-#if !defined(ENCODER_SETTLE_PIN_DELAY)
-#   define ENCODER_SETTLE_PIN_DELAY 20
+#if !defined(PLANCK_ENCODER_SETTLE_PIN_DELAY)
+#   define PLANCK_ENCODER_SETTLE_PIN_DELAY 20
 #endif
 
 /* matrix state(1:on, 0:off) */
@@ -97,7 +97,7 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
         gpio_write_pin_high(matrix_col_pins[col]);
 
         // need wait to settle pin state
-        wait_us(ENCODER_SETTLE_PIN_DELAY);
+        wait_us(PLANCK_ENCODER_SETTLE_PIN_DELAY);
 
         // read row data
         for (int row = 0; row < MATRIX_ROWS; row++) {
@@ -163,7 +163,7 @@ void encoder_driver_task(void) {
 
     for (int i = 0; i < MATRIX_ROWS; i++) {
         gpio_write_pin_low(matrix_row_pins[i]);
-        wait_us(ENCODER_SETTLE_PIN_DELAY);
+        wait_us(PLANCK_ENCODER_SETTLE_PIN_DELAY);
         uint8_t new_status = (palReadPad(GPIOB, 12) << 0) | (palReadPad(GPIOB, 13) << 1);
         if ((encoder_state[i] & 0x3) != new_status) {
             encoder_state[i] <<= 2;
