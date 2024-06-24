@@ -34,7 +34,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,  KC_Q,   KC_W,    KC_E,    KC_R,    KC_T,   KC_Y,    KC_U,    KC_I,    KC_O,   KC_P,    KC_BSPC,
         KC_LCTL, KC_A,   KC_S,    KC_D,    KC_F,    KC_G,   KC_H,    KC_J,    KC_K,    KC_L,   KC_SCLN, KC_ENT,
         KC_LSFT, KC_Z,   KC_X,    KC_C,    KC_V,    KC_B,   KC_N,    KC_M,    KC_COMM, KC_DOT, KC_SLSH, KC_RSFT,
-        KC_MUTE, KC_ESC, KC_LALT, KC_LGUI, KC_LNG2, KC_SPC, KC_LNG1, KC_RGUI, LOWER,   RAISE,  ADJUST,  KC_RALT
+        KC_MUTE, KC_ESC, KC_LALT, KC_LGUI, KC_LNG2, KC_SPC, LOWER, KC_LNG1,   KC_RGUI, RAISE,  KC_RALT, KC_MUTE
     ),
 
     /* Lowe
@@ -125,4 +125,147 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 
 layer_state_t layer_state_set_user(layer_state_t state) {
     return update_tri_layer_state(state, _LOWER, _RAISE, _ADJUST);
+}
+
+
+#ifdef AUDIO_ENABLE
+float plover_song[][2]    = SONG(PLOVER_SOUND);
+float plover_gb_song[][2] = SONG(PLOVER_GOODBYE_SOUND);
+#endif
+
+
+/* clang-format off */
+float melody[8][2][2] = {
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+};
+/* clang-format on */
+
+#define JUST_MINOR_THIRD 1.2
+#define JUST_MAJOR_THIRD 1.25
+#define JUST_PERFECT_FOURTH 1.33333333
+#define JUST_TRITONE 1.42222222
+#define JUST_PERFECT_FIFTH 1.33333333
+
+#define ET12_MINOR_SECOND 1.059463
+#define ET12_MAJOR_SECOND 1.122462
+#define ET12_MINOR_THIRD 1.189207
+#define ET12_MAJOR_THIRD 1.259921
+#define ET12_PERFECT_FOURTH 1.33484
+#define ET12_TRITONE 1.414214
+#define ET12_PERFECT_FIFTH 1.498307
+
+deferred_token tokens[8];
+
+uint32_t reset_note(uint32_t trigger_time, void *note) {
+    *(float*)note = 440.0f;
+    return 0;
+}
+
+bool play_encoder_melody(uint8_t index, bool clockwise) {
+    cancel_deferred_exec(tokens[index]);
+    if (clockwise) {
+        melody[index][1][0] = melody[index][1][0] * ET12_MINOR_SECOND;
+        melody[index][0][0] = melody[index][1][0] / ET12_PERFECT_FIFTH;
+        audio_play_melody(&melody[index], 2, false);
+    } else {
+        melody[index][1][0] = melody[index][1][0] / ET12_MINOR_SECOND;
+        melody[index][0][0] = melody[index][1][0] * ET12_TRITONE;
+        audio_play_melody(&melody[index], 2, false);
+    }
+    tokens[index] = defer_exec(1000, reset_note, &melody[index][1][0]);
+    return false;
+}
+
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+#ifdef ENCODER_MAP_ENABLE
+    if (IS_ENCODEREVENT(record->event) && record->event.pressed) {
+        play_encoder_melody(record->event.key.col, record->event.type == ENCODER_CCW_EVENT);
+    }
+#endif
+    switch (keycode) {
+        case QWERTY:
+            if (record->event.pressed) {
+                print("mode just switched to qwerty and this is a huge string\n");
+                set_single_persistent_default_layer(_QWERTY);
+            }
+            return false;
+            break;
+    }
+    return true;
+}
+
+
+bool encoder_update_user(uint8_t index, bool clockwise) {
+    return play_encoder_melody(index, clockwise);
+}
+
+bool dip_switch_update_user(uint8_t index, bool active) {
+    switch (index) {
+        case 0: {
+#ifdef AUDIO_ENABLE
+            static bool play_sound = false;
+#endif
+            if (active) {
+#ifdef AUDIO_ENABLE
+                if (play_sound) {
+                    PLAY_SONG(plover_song);
+                }
+#endif
+                layer_on(_ADJUST);
+            } else {
+#ifdef AUDIO_ENABLE
+                if (play_sound) {
+                    PLAY_SONG(plover_gb_song);
+                }
+#endif
+                layer_off(_ADJUST);
+            }
+#ifdef AUDIO_ENABLE
+            play_sound = true;
+#endif
+            break;
+        }
+    }
+    return true;
+}
+
+// レイヤーに応じてLEDの色を変更する
+
+
+bool rgb_matrix_indicators_user(void) {
+    // デフォルトの色
+    HSV hsv = (HSV){81, 51, 28};
+    switch (get_highest_layer(layer_state)) {
+        case 1:
+            // レイヤー1の色
+            hsv = (HSV){22, 255, 255};
+            break;
+        case 2:
+            hsv = (HSV){106, 255, 255};
+            break;
+        case 3:
+            //
+            hsv = (HSV){0, 92, 76};
+            break;
+        default:
+//            hsv = (HSV){150, 100, 255};
+            break;
+    }
+    if (hsv.v > rgb_matrix_get_val()) {
+        hsv.v = rgb_matrix_get_val();
+    }
+    RGB rgb = hsv_to_rgb(hsv);
+    rgb_matrix_set_color(3, rgb.r, rgb.g, rgb.b);
+    rgb_matrix_set_color(4, rgb.r, rgb.g, rgb.b);
+    rgb_matrix_set_color(5, rgb.r, rgb.g, rgb.b);
+    rgb_matrix_set_color(6, rgb.r, rgb.g, rgb.b);
+
+    return true;
 }
